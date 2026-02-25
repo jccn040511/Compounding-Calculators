@@ -1,0 +1,139 @@
+================================================================================
+  MERCER FUNDING GROUP - UTILISATION & FACILITY AMOUNT CALCULATION LOGIC
+  Reference document (notepad-style). Keep for future reference.
+================================================================================
+
+OVERVIEW
+--------
+This document describes how the Progress Draw facility size, establishment fee,
+and interest (finance cost) are calculated when utilisation and a facility fee
+apply. The establishment fee is drawn at settlement, so the opening balance
+on which interest runs includes net + fee.
+
+
+KEY RULES
+---------
+1. Opening balance at settlement
+   - The balance from month 1 = NET AMOUNT + ESTABLISHMENT FEE.
+   - The establishment fee is taken/drawn at settlement, so it is part of the
+     amount on which interest is calculated from day one.
+
+2. Draw period (e.g. first 12 months = construction period)
+   - Utilisation during draw is a percentage of the balance (e.g. 55%).
+   - Each month: interest = balance × (utilisation%) × (annual rate / 12).
+   - Interest is CAPITALISED monthly (added to the balance for the next month).
+
+3. Tail period (e.g. months 13-18 after full draw)
+   - Net funds are fully drawn, so utilisation = 100%.
+   - Balance at start of tail = net + establishment fee + all interest
+     capitalised during the draw period.
+   - Each month: interest = balance × 100% × (annual rate / 12); capitalise.
+
+4. Facility size and establishment fee (when fee % > 0)
+   - Fee is a percentage of the facility limit (e.g. 3%).
+   - Facility is grossed up so that: (net + total interest) = facility × (1 - fee%).
+   - So: Facility = (net + total interest) / (1 - fee rate).
+   - Establishment fee = Facility × fee rate.
+   - Because interest depends on the fee (through the opening balance), and the
+     fee depends on total interest, we ITERATE until the fee (and facility) are
+     stable.
+
+
+FORMULAS (SUMMARY)
+-----------------
+  monthlyRate       = annualRate / 12
+  opening balance   = netAmount + establishmentFee   (at settlement)
+  utilisation       = (month <= buildMonths) ? utilisationPct/100 : 1.0
+  interestThisMonth = simulationBalance × utilisation × monthlyRate
+  simulationBalance  = simulationBalance + interestThisMonth  (each month)
+
+  After the monthly loop (when facility fee % > 0):
+  facilitySize      = (netAmount + totalInterest) / (1 - feeRate)
+  establishmentFee  = facilitySize × feeRate
+
+  When facility fee % = 0:
+  facilitySize      = netAmount + totalInterest
+  establishmentFee  = 0
+
+
+ITERATION (when facility fee % > 0)
+-----------------------------------
+1. Initial guess: establishmentFee = netAmount × (feeRate).
+2. Run the monthly simulation with opening balance = netAmount + establishmentFee.
+3. totalInterest = sum of all monthly interest from the simulation.
+4. facilitySize = (netAmount + totalInterest) / (1 - feeRate).
+5. establishmentFeeNew = facilitySize × feeRate.
+6. If |establishmentFeeNew - establishmentFee| < 0.01, stop.
+7. Otherwise set establishmentFee = establishmentFeeNew and go to step 2.
+8. Repeat up to 50 times.
+
+
+CORE CALCULATION FUNCTION (pseudocode / logic)
+----------------------------------------------
+Function: calculateMercerFunding(netAmount, annualRate, buildMonths, totalTerm,
+                                utilisationPct, establishmentFee)
+
+  monthlyRate = annualRate / 12
+  utilisationDecimal = utilisationPct / 100
+
+  // Opening balance at settlement = net + establishment fee
+  simulationBalance = netAmount + establishmentFee
+  totalInterest = 0
+
+  For m = 1 To totalTerm:
+      utilisation = (m <= buildMonths) ? utilisationDecimal : 1.0
+      openingBalance = simulationBalance
+      interestThisMonth = simulationBalance × utilisation × monthlyRate
+      totalInterest += interestThisMonth
+      simulationBalance += interestThisMonth
+      // store row: period m, openingBalance, interestThisMonth, closingBalance
+
+  Return { totalInterest, monthlyRows, finalBalance: simulationBalance }
+
+
+CALLER (Progress Draw with fee) - iteration
+-------------------------------------------
+  establishmentFee = netRequired × (facilityFeePct / 100)   // initial guess
+  factor = 1 - facilityFeePct/100
+
+  For iter = 0 To 49:
+      ref = calculateMercerFunding(netRequired, rateDecimal, drawMonths,
+                                  termMonths, utilisationPct, establishmentFee)
+      monthlyRows = ref.monthlyRows
+      totalInterest = ref.totalInterest
+      finalBalance = ref.finalBalance
+      If facilityFeePct <= 0 Then break
+      facilitySize = (netRequired + totalInterest) / factor
+      establishmentFeeNew = facilitySize × (facilityFeePct / 100)
+      If |establishmentFeeNew - establishmentFee| < 0.01 Then break
+      establishmentFee = establishmentFeeNew
+
+  If facilityFeePct <= 0 Then facilitySize = netRequired + totalInterest
+  Else facilitySize = (netRequired + totalInterest) / factor
+
+
+EXAMPLE INPUTS (typical scenario)
+---------------------------------
+  Net amount required:     3,050,000
+  Interest rate (p.a.):    10.25%
+  Construction period:     12 months
+  Facility term:           18 months
+  Utilisation during draw: 55%
+  Facility fee:            3%
+
+  Expected (after iteration): facility ~3,512,699; interest ~357,318; fee ~105,381.
+  Month 1 opening balance = 3,050,000 + establishment fee (fee converges in iteration).
+
+
+IMPLEMENTATION FILE
+-------------------
+The live code lives in: script.js
+  - Function: calculateMercerFunding(...)
+  - Call site: runCalculation() when facility type is Progress Draw (isProgressive).
+
+
+================================================================================
+  End of reference. Last updated for logic: opening balance = net + fee at
+  settlement; draw 55% utilisation with monthly capitalisation; tail 100%;
+  facility = (net + total interest) / (1 - fee rate); iterate for fee.
+================================================================================

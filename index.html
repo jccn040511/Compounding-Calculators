@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compound Interest Calculator | Mercer Funding Group</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="https://mercerfg.com.au"
+       class="logo-link"
+       aria-label="Mercer Funding Group home"
+       target="_blank"
+       rel="noopener noreferrer">
+      <img src="assets/mfg-logo.png" alt="Mercer Funding Group" class="logo">
+    </a>
+    <div class="header-titles">
+      <h1 class="page-title">Capitalisation Interest Calculator</h1>
+      <p class="page-subtitle">Estimate Interest charges on your facility.</p>
+    </div>
+    <button type="button"
+            class="header-help"
+            id="help-toggle"
+            aria-expanded="false"
+            aria-controls="help-content">
+      <span class="header-help-text">Help</span>
+      <span class="header-help-icon" aria-hidden="true">?</span>
+    </button>
+  </header>
+
+  <main class="main-content">
+    <div class="calculator-layout">
+      <aside class="calculator-inputs">
+        <section class="inputs-card card">
+          <h2 class="section-heading">Calculator inputs</h2>
+          <form id="calculator-form" class="inputs-form" novalidate>
+            <div class="input-group">
+              <span class="toggle-label" id="facility-type-label">Facility type</span>
+              <div class="facility-type-toggle" role="group" aria-labelledby="facility-type-label">
+                <input type="radio"
+                       id="facility-type-fully"
+                       name="facility-type"
+                       value="fully"
+                       checked>
+                <label for="facility-type-fully">Fully Drawn</label>
+                <input type="radio"
+                       id="facility-type-progress"
+                       name="facility-type"
+                       value="progress">
+                <label for="facility-type-progress">Progress Draw</label>
+              </div>
+            </div>
+
+            <div class="amount-term-row">
+              <div class="input-group input-group-narrow">
+                <label for="principal">Amount required (net) $</label>
+                <div class="input-wrap input-currency">
+                  <span class="prefix">$</span>
+                  <input type="text"
+                         id="principal"
+                         name="principal"
+                         inputmode="decimal"
+                         placeholder="0"
+                         autocomplete="off">
+                </div>
+              </div>
+              <div class="input-group input-group-narrow">
+                <label for="term">Facility term (months)</label>
+                <input type="number"
+                       id="term"
+                       name="term"
+                       min="1"
+                       max="600"
+                       step="1"
+                       inputmode="numeric"
+                       placeholder="12">
+              </div>
+            </div>
+
+            <div id="progressive-draw-options" class="progressive-options" hidden>
+              <div class="progressive-options-row">
+                <div class="input-group input-group-narrow">
+                  <label for="construction-period">Construction period (months)</label>
+                  <div class="input-wrap">
+                    <input type="text"
+                           id="construction-period"
+                           name="construction-period"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           placeholder="12"
+                           autocomplete="off">
+                  </div>
+                  <span class="hint">Period over which the facility is drawn (e.g. build period).</span>
+                </div>
+                <div class="input-group input-group-narrow">
+                  <label for="utilisation">Utilisation during draw (%)</label>
+                  <div class="input-wrap">
+                    <input type="text"
+                           id="utilisation"
+                           name="utilisation"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           placeholder="55"
+                           value="55"
+                           autocomplete="off">
+                    <span class="suffix">%</span>
+                  </div>
+                  <span class="hint">Average % of facility limit in use during the construction/draw period (e.g. 55%).</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="rate-fee-fields-container"></div>
+
+            <div id="fully-drawn-options" class="fully-drawn-options">
+              <div id="rate-fee-fields-placeholder"></div>
+            </div>
+
+            <div id="rate-fee-fields" class="rate-fee-fields">
+              <div class="rate-fee-row">
+                <div class="input-group input-group-narrow">
+                  <label for="rate">Interest rate (% p.a.)</label>
+                  <div class="input-wrap">
+                    <input type="text"
+                           id="rate"
+                           name="rate"
+                           inputmode="decimal"
+                           placeholder="0"
+                           autocomplete="off">
+                    <span class="suffix">%</span>
+                  </div>
+                </div>
+                <div class="input-group input-group-narrow">
+                  <label for="frequency" class="label-with-tooltip">
+                    Capitalisation Frequency
+                    <span class="tooltip-wrap">
+                      <button type="button"
+                              class="tooltip-icon"
+                              id="frequency-tooltip-trigger"
+                              aria-label="Help: How often interest is added to the balance."
+                              aria-expanded="false"
+                              aria-controls="frequency-tooltip-popover">?</button>
+                      <span id="frequency-tooltip-popover"
+                            class="tooltip-popover"
+                            role="tooltip"
+                            hidden>
+                        How often interest is added to the balance. For example, Monthly means interest is capitalised every month (12 times per year).
+                      </span>
+                    </span>
+                  </label>
+                  <select id="frequency" name="frequency">
+                    <option value="12">Monthly</option>
+                    <option value="4">Quarterly</option>
+                    <option value="2">Half-yearly</option>
+                    <option value="1">Yearly</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="fee-actions-row">
+                <div class="input-group input-group-narrow fee-input-group">
+                  <label for="facility-fee">Facility fee (%)</label>
+                  <div class="input-wrap">
+                    <input type="text"
+                           id="facility-fee"
+                           name="facility-fee"
+                           inputmode="decimal"
+                           pattern="[0-9.]*"
+                           placeholder="0"
+                           value="0"
+                           autocomplete="off">
+                    <span class="suffix">%</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button type="submit" class="btn btn-primary">Calculate</button>
+                  <button type="button" class="btn btn-secondary" id="clear-all">Clear all</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>
+      </aside>
+
+      <div class="calculator-results">
+        <div class="results-panel card">
+          <div id="help-content"
+               class="help-content"
+               hidden
+               aria-labelledby="help-heading">
+            <h2 id="help-heading" class="section-heading">Calculator Help</h2>
+            <dl class="help-list">
+              <dt>Amount required (net) $</dt>
+              <dd>The net amount you need (e.g. construction funds). When a facility fee % is set, the calculator grosses up to the facility size so that after the fee, the remainder covers this amount plus interest.</dd>
+              <dt>Interest rate (% p.a.)</dt>
+              <dd>The nominal annual rate as quoted by the lender. Enter as a percentage (e.g. 12 for 12%).</dd>
+              <dt>Capitalisation frequency</dt>
+              <dd>How often interest is added to the balance (capitalised).</dd>
+              <dt>Facility term (months)</dt>
+              <dd>Total length of the facility in months.</dd>
+              <dt>Utilisation during draw (%)</dt>
+              <dd>Average percentage of the facility limit that is in use during the construction/draw period.</dd>
+              <dt>Facility fee (%)</dt>
+              <dd>Upfront fee as % of the facility limit (e.g. 3%).</dd>
+              <dt>Effective annual rate</dt>
+              <dd>The true yearly rate after capitalisation.</dd>
+            </dl>
+          </div>
+
+          <section id="results-section" class="results-section" aria-live="polite">
+            <h2 class="calculation-title" id="calculation-title">Calculation</h2>
+            <p id="progressive-summary"
+               class="progressive-summary"
+               hidden
+               aria-live="polite"></p>
+
+            <div class="summary-hero">
+              <div class="summary-hero-item summary-hero-facility">
+                <span class="summary-hero-label">Calculated facility size</span>
+                <span class="summary-hero-value" id="facility-size">–</span>
+              </div>
+              <div class="summary-hero-item summary-hero-interest">
+                <span class="summary-hero-label">Finance cost (interest)</span>
+                <span class="summary-hero-value" id="total-interest">–</span>
+              </div>
+              <div class="summary-hero-item summary-hero-balance">
+                <span class="summary-hero-label">Total cost (interest + fee)</span>
+                <span class="summary-hero-value" id="total-cost">–</span>
+              </div>
+            </div>
+
+            <div class="summary-extra">
+              <div class="summary-item">
+                <span class="summary-label">Total Facility Fees (Est.)</span>
+                <span class="summary-value" id="facility-fee-result">–</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Final balance</span>
+                <span class="summary-value" id="final-balance">–</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Effective annual rate</span>
+                <span class="summary-value" id="effective-rate">–</span>
+              </div>
+            </div>
+
+            <div class="stacked-bar-chart" id="stacked-bar-chart" aria-hidden="true">
+              <p class="chart-title">Principal vs interest</p>
+              <div class="chart-bar-wrap"
+                   role="img"
+                   aria-label="Stacked bar: original principal and total interest accrued">
+                <div class="chart-segment chart-principal"
+                     id="chart-segment-principal"
+                     style="width: 0%"></div>
+                <div class="chart-segment chart-interest"
+                     id="chart-segment-interest"
+                     style="width: 0%"></div>
+              </div>
+              <div class="chart-legend">
+                <span class="chart-legend-item">
+                  <span class="chart-legend-swatch chart-principal"></span> Original principal
+                </span>
+                <span class="chart-legend-item">
+                  <span class="chart-legend-swatch chart-interest"></span> Total interest accrued
+                </span>
+              </div>
+            </div>
+
+            <div class="breakdown-tabs" role="tablist" aria-label="Breakdown view">
+              <div class="tabs-row">
+                <div class="tabs-group">
+                  <button type="button"
+                          class="tab-btn active"
+                          role="tab"
+                          id="tab-monthly"
+                          aria-selected="true"
+                          aria-controls="panel-monthly"
+                          data-tab="monthly">
+                    Monthly
+                  </button>
+                  <button type="button"
+                          class="tab-btn"
+                          role="tab"
+                          id="tab-yearly"
+                          aria-selected="false"
+                          aria-controls="panel-yearly"
+                          data-tab="yearly">
+                    Yearly
+                  </button>
+                </div>
+                <div class="export-buttons">
+                  <button type="button"
+                          class="btn btn-export"
+                          id="export-csv"
+                          aria-label="Export table to CSV">
+                    Export CSV
+                  </button>
+                  <button type="button"
+                          class="btn btn-export"
+                          id="export-pdf"
+                          aria-label="Export table to PDF">
+                    Export PDF
+                  </button>
+                </div>
+              </div>
+
+              <div id="panel-monthly"
+                   class="tab-panel"
+                   role="tabpanel"
+                   aria-labelledby="tab-monthly">
+                <p class="scroll-hint" aria-hidden="true">Swipe left/right for more columns</p>
+                <div class="table-scroll">
+                  <table class="breakdown-table" id="monthly-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Month</th>
+                        <th scope="col">Opening balance</th>
+                        <th scope="col">Interest</th>
+                        <th scope="col">Closing balance</th>
+                      </tr>
+                    </thead>
+                    <tbody id="monthly-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div id="panel-yearly"
+                   class="tab-panel hidden"
+                   role="tabpanel"
+                   aria-labelledby="tab-yearly">
+                <div class="table-scroll">
+                  <table class="breakdown-table" id="yearly-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Year</th>
+                        <th scope="col">Opening balance</th>
+                        <th scope="col">Interest</th>
+                        <th scope="col">Closing balance</th>
+                      </tr>
+                    </thead>
+                    <tbody id="yearly-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-ctas">
+      <div class="footer-cta-card">
+        <h2 class="footer-cta-heading">WANT A DETAILED FEASIBILITY AND FUNDING OPTIONS?</h2>
+        <p class="footer-cta-subtitle">
+          Talk to Mercer Funding Group for specialist access to private lenders and non-bank finance.
+        </p>
+        <a href="https://calendly.com/enquiries-w4n0/15mins?month=2026-02"
+           class="btn btn-footer-primary footer-cta-main-btn"
+           target="_blank"
+           rel="noopener noreferrer">
+          Book a call with a specialist
+        </a>
+        <p class="footer-cta-or">or submit your details and we'll be in touch:</p>
+        <form class="footer-cta-form" id="footer-cta-form">
+          <div class="footer-cta-input-row">
+            <input type="text"
+                   name="name"
+                   placeholder="Your name"
+                   autocomplete="name"
+                   required>
+            <input type="email"
+                   name="email"
+                   placeholder="Email"
+                   autocomplete="email"
+                   required>
+          </div>
+          <input type="tel"
+                 name="phone"
+                 placeholder="Phone (optional)"
+                 autocomplete="tel"
+                 class="footer-cta-input-full">
+          <button type="submit"
+                  class="btn btn-footer-primary footer-cta-submit">
+            Get in touch
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="disclaimer">
+      Disclaimer: This calculator provides estimates only. Results are for general guidance and should not be relied upon for lending or investment decisions. Always verify with Mercer Funding Group or your adviser before committing to a facility.
+    </p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
