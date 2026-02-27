@@ -614,18 +614,4 @@
     helpContent.hidden = !expanded;
     helpToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   });
-
-  var footerCtaForm = document.getElementById('footer-cta-form');
-  if (footerCtaForm) {
-    footerCtaForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var name = (footerCtaForm.querySelector('[name="name"]') && footerCtaForm.querySelector('[name="name"]').value) || '';
-      var email = (footerCtaForm.querySelector('[name="email"]') && footerCtaForm.querySelector('[name="email"]').value) || '';
-      var phone = (footerCtaForm.querySelector('[name="phone"]') && footerCtaForm.querySelector('[name="phone"]').value) || '';
-      var body = 'Name: ' + name + '\nEmail: ' + email + '\nPhone: ' + (phone || 'Not provided');
-      var subject = 'Contact from Capitalisation Interest Calculator';
-      var mailtoUrl = 'mailto:enquiries@mercerfg.com.au?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      window.location.href = mailtoUrl;
-    });
-  }
 })();
