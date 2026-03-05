@@ -559,6 +559,17 @@ body {
   background: var(--color-input-bg);
 }
 
+/* Hide spinner arrows so user types the value */
+#term::-webkit-outer-spin-button,
+#term::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#term {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .input-group select {
   border: 1px solid var(--color-input-border);
   background: var(--color-input-bg);
@@ -799,6 +810,10 @@ body {
   color: var(--color-text-muted);
 }
 
+.breakdown-legend[hidden] {
+  display: none !important;
+}
+
 .breakdown-legend-item {
   display: inline-flex;
   align-items: center;
@@ -886,6 +901,7 @@ body {
 }
 
 .scroll-hint {
+  display: none;
   margin: 0 0 var(--space-sm);
   font-size: 0.8125rem;
   color: var(--color-text-muted);
@@ -981,6 +997,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .scroll-hint {
+    display: block;
+  }
+
   .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;

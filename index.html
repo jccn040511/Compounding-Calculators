@@ -81,7 +81,23 @@
             <div id="progressive-draw-options" class="progressive-options" hidden>
               <div class="progressive-options-row">
                 <div class="input-group input-group-narrow">
-                  <label for="construction-period">Construction period (months)</label>
+                  <label for="construction-period" class="label-with-tooltip">
+                    Construction period (months)
+                    <span class="tooltip-wrap">
+                      <button type="button"
+                              class="tooltip-icon"
+                              tabindex="-1"
+                              aria-label="Help: Construction period."
+                              aria-expanded="false"
+                              aria-controls="construction-period-tooltip-popover">?</button>
+                      <span id="construction-period-tooltip-popover"
+                            class="tooltip-popover"
+                            role="tooltip"
+                            hidden>
+                        Period over which the facility is drawn (e.g. build period).
+                      </span>
+                    </span>
+                  </label>
                   <div class="input-wrap">
                     <input type="text"
                            id="construction-period"
@@ -91,10 +107,25 @@
                            placeholder="12"
                            autocomplete="off">
                   </div>
-                  <span class="hint">Period over which the facility is drawn (e.g. build period).</span>
                 </div>
                 <div class="input-group input-group-narrow">
-                  <label for="utilisation">Utilisation during draw (%)</label>
+                  <label for="utilisation" class="label-with-tooltip">
+                    Utilisation during draw (%)
+                    <span class="tooltip-wrap">
+                      <button type="button"
+                              class="tooltip-icon"
+                              tabindex="-1"
+                              aria-label="Help: Utilisation during draw."
+                              aria-expanded="false"
+                              aria-controls="utilisation-tooltip-popover">?</button>
+                      <span id="utilisation-tooltip-popover"
+                            class="tooltip-popover"
+                            role="tooltip"
+                            hidden>
+                        Average % of facility limit in use during the construction/draw period (e.g. 55%).
+                      </span>
+                    </span>
+                  </label>
                   <div class="input-wrap">
                     <input type="text"
                            id="utilisation"
@@ -106,7 +137,6 @@
                            autocomplete="off">
                     <span class="suffix">%</span>
                   </div>
-                  <span class="hint">Average % of facility limit in use during the construction/draw period (e.g. 55%).</span>
                 </div>
               </div>
             </div>
@@ -138,6 +168,7 @@
                       <button type="button"
                               class="tooltip-icon"
                               id="frequency-tooltip-trigger"
+                              tabindex="-1"
                               aria-label="Help: How often interest is added to the balance."
                               aria-expanded="false"
                               aria-controls="frequency-tooltip-popover">?</button>

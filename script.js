@@ -517,47 +517,54 @@
 
   var frequencySelect = form.frequency;
 
-  var frequencyTooltipTrigger = document.getElementById('frequency-tooltip-trigger');
-  var frequencyTooltipPopover = document.getElementById('frequency-tooltip-popover');
-  var frequencyTooltipWrap = frequencyTooltipTrigger && frequencyTooltipTrigger.closest('.tooltip-wrap');
-  if (frequencyTooltipTrigger && frequencyTooltipPopover && frequencyTooltipWrap) {
-    function closeFrequencyTooltip() {
-      frequencyTooltipWrap.classList.remove('open');
-      frequencyTooltipPopover.setAttribute('hidden', '');
-      frequencyTooltipTrigger.setAttribute('aria-expanded', 'false');
+  function initTooltipWrap(wrap) {
+    var trigger = wrap.querySelector('.tooltip-icon');
+    var popover = wrap.querySelector('.tooltip-popover');
+    if (!trigger || !popover) return;
+    function close() {
+      wrap.classList.remove('open');
+      popover.setAttribute('hidden', '');
+      trigger.setAttribute('aria-expanded', 'false');
     }
-    function openFrequencyTooltip() {
-      frequencyTooltipWrap.classList.add('open');
-      frequencyTooltipPopover.removeAttribute('hidden');
-      frequencyTooltipTrigger.setAttribute('aria-expanded', 'true');
+    function open() {
+      wrap.classList.add('open');
+      popover.removeAttribute('hidden');
+      trigger.setAttribute('aria-expanded', 'true');
     }
-    frequencyTooltipTrigger.addEventListener('click', function (e) {
+    trigger.addEventListener('click', function (e) {
       e.preventDefault();
-      if (frequencyTooltipWrap.classList.contains('open')) {
-        closeFrequencyTooltip();
-      } else {
-        openFrequencyTooltip();
-      }
+      if (wrap.classList.contains('open')) close();
+      else open();
     });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && frequencyTooltipWrap.classList.contains('open')) {
-        closeFrequencyTooltip();
-        frequencyTooltipTrigger.focus();
-      }
-    });
-    document.addEventListener('click', function (e) {
-      if (frequencyTooltipWrap.classList.contains('open') && !frequencyTooltipWrap.contains(e.target)) {
-        closeFrequencyTooltip();
-      }
-    });
-    frequencyTooltipTrigger.addEventListener('blur', function () {
+    trigger.addEventListener('blur', function () {
       setTimeout(function () {
-        if (!frequencyTooltipWrap.contains(document.activeElement)) {
-          closeFrequencyTooltip();
-        }
+        if (!wrap.contains(document.activeElement)) close();
       }, 0);
     });
   }
+  document.querySelectorAll('.tooltip-wrap').forEach(initTooltipWrap);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var openWrap = document.querySelector('.tooltip-wrap.open');
+      if (openWrap) {
+        var trigger = openWrap.querySelector('.tooltip-icon');
+        openWrap.classList.remove('open');
+        openWrap.querySelector('.tooltip-popover').setAttribute('hidden', '');
+        if (trigger) {
+          trigger.setAttribute('aria-expanded', 'false');
+          trigger.focus();
+        }
+      }
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var openWrap = document.querySelector('.tooltip-wrap.open');
+    if (openWrap && !openWrap.contains(e.target)) {
+      openWrap.classList.remove('open');
+      openWrap.querySelector('.tooltip-popover').setAttribute('hidden', '');
+      openWrap.querySelector('.tooltip-icon').setAttribute('aria-expanded', 'false');
+    }
+  });
 
   function setBreakdownTab(tab) {
     var isMonthly = tab === 'monthly';
