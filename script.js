@@ -23,6 +23,9 @@
   var panelMonthly = document.getElementById('panel-monthly');
   var panelYearly = document.getElementById('panel-yearly');
   var calculationTitleEl = document.getElementById('calculation-title');
+  var breakdownLegendEl = document.getElementById('breakdown-legend');
+  var breakdownLegendDrawLabel = document.getElementById('breakdown-legend-draw-label');
+  var breakdownLegendTailLabel = document.getElementById('breakdown-legend-tail-label');
 
   function parseNum(val) {
     if (val == null || val === '') return NaN;
@@ -328,9 +331,16 @@
     }
 
     var yearlyRows = buildYearlyRows(monthlyRows);
-    var effectiveRate = (Math.pow(1 + rateDecimal / n, n) - 1) * 100;
     var facilityFee = facilityFeePct > 0 ? facilitySize * (facilityFeePct / 100) : 0;
     var totalCost = totalInterest + facilityFee;
+    var effectiveRate;
+    if ((facilityFee > 0 || isProgressive) && netRequired > 0 && termMonths > 0) {
+      // All-in effective annual rate: reflects actual total cost (and utilisation for progressive draws), annualised over term
+      effectiveRate = (Math.pow(1 + totalCost / netRequired, 12 / termMonths) - 1) * 100;
+    } else {
+      // Interest-only effective annual rate (nominal rate compounded, fully drawn)
+      effectiveRate = (Math.pow(1 + rateDecimal / n, n) - 1) * 100;
+    }
 
     return {
       valid: true,
@@ -342,14 +352,21 @@
       totalCost: totalCost,
       finalBalance: finalBalance,
       effectiveRate: effectiveRate,
-      progressiveSummary: progressiveSummary
+      progressiveSummary: progressiveSummary,
+      isProgressive: isProgressive,
+      drawMonths: isProgressive ? drawMonths : null,
+      utilisationPct: isProgressive ? utilisationPct : null
     };
   }
 
   function renderTables(data) {
+    var isProgressive = data.isProgressive && data.drawMonths != null;
     monthlyTbody.innerHTML = '';
     data.monthlyRows.forEach(function (row) {
       var tr = document.createElement('tr');
+      if (isProgressive) {
+        tr.classList.add(row.period <= data.drawMonths ? 'phase-draw' : 'phase-tail');
+      }
       tr.innerHTML =
         '<td>' + row.period + '</td>' +
         '<td>' + formatCurrency(row.openingBalance) + '</td>' +
@@ -362,6 +379,10 @@
     yearlyTbody.innerHTML = '';
     data.yearlyRows.forEach(function (row) {
       var tr = document.createElement('tr');
+      if (isProgressive) {
+        var firstMonth = (row.year - 1) * 12 + 1;
+        tr.classList.add(firstMonth <= data.drawMonths ? 'phase-draw' : 'phase-tail');
+      }
       tr.innerHTML =
         '<td>' + row.year + '</td>' +
         '<td>' + formatCurrency(row.openingBalance) + '</td>' +
@@ -389,6 +410,17 @@
       progressiveSummaryEl.hidden = false;
     } else {
       progressiveSummaryEl.hidden = true;
+    }
+    if (data.isProgressive && data.drawMonths != null && breakdownLegendEl) {
+      breakdownLegendEl.hidden = false;
+      if (breakdownLegendDrawLabel) {
+        breakdownLegendDrawLabel.textContent = 'Months 1–' + data.drawMonths + ': Utilisation period (' + (data.utilisationPct != null ? data.utilisationPct + '%' : '') + ')';
+      }
+      if (breakdownLegendTailLabel) {
+        breakdownLegendTailLabel.textContent = 'Months ' + (data.drawMonths + 1) + '+: 100% utilisation';
+      }
+    } else if (breakdownLegendEl) {
+      breakdownLegendEl.hidden = true;
     }
     renderTables(data);
     updateStackedBarChart(parseNum(form.principal.value), data.totalInterest);
@@ -424,6 +456,7 @@
     finalBalanceEl.textContent = '–';
     effectiveRateEl.textContent = '–';
     progressiveSummaryEl.hidden = true;
+    if (breakdownLegendEl) breakdownLegendEl.hidden = true;
     monthlyTbody.innerHTML = '';
     yearlyTbody.innerHTML = '';
     updateStackedBarChart(0, 0);
@@ -671,6 +704,8 @@
         var feeInput = form && form['facility-fee'] ? form['facility-fee'].value : '';
         var isProgressive = facilityTypeProgress && facilityTypeProgress.checked;
         var facilityTypeLabel = isProgressive ? 'Progress Draw' : 'Fully Drawn';
+        var constructionPeriodInput = form && form['construction-period'] ? form['construction-period'].value : '';
+        var utilisationInput = form && form.utilisation ? form.utilisation.value : '';
 
         var pageWidth = doc.internal.pageSize.width || 297;
         var contentWidth = pageWidth - marginLeft - marginRight;
@@ -678,7 +713,7 @@
         var cardWidth = (contentWidth - cardGap) / 2;
         var leftCardX = marginLeft;
         var rightCardX = marginLeft + cardWidth + cardGap;
-        var cardHeight = 52;
+        var cardHeight = 62;
         var cardPadding = 5;
         var cardsRowTop = cursorY;
 
@@ -700,6 +735,8 @@
           'Facility type: ',
           'Amount required (net): ',
           'Facility term (months): ',
+          'Construction period (months): ',
+          'Utilisation during draw (%): ',
           'Interest rate (% p.a.): ',
           'Capitalisation frequency: ',
           'Facility fee (%): '
@@ -708,6 +745,8 @@
           facilityTypeLabel,
           principalInput || '–',
           termInput || '–',
+          isProgressive ? (constructionPeriodInput || '–') : '–',
+          isProgressive ? (utilisationInput || '–') : '–',
           rateInput || '–',
           frequencyInput || '–',
           feeInput || '–'
@@ -767,7 +806,45 @@
           day: 'numeric'
         });
 
-        doc.autoTable({
+        var pdfDrawMonths = isProgressive && constructionPeriodInput ? parseInt(constructionPeriodInput, 10) : 0;
+        var useProgressiveColors = isProgressive && pdfDrawMonths > 0;
+
+        if (useProgressiveColors) {
+          var legendX = marginLeft;
+          var legendY = cursorY;
+          var swatchSize = 4;
+          var swatchGap = 3;
+          var lineGap = 5;
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+
+          // Line 1: blue swatch + utilisation period label
+          doc.setFillColor(224, 242, 254); // light blue
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.1);
+          doc.rect(legendX, legendY - swatchSize + 1, swatchSize, swatchSize, 'FD');
+          doc.setTextColor(0, 0, 0);
+          var drawLabel =
+            'Utilisation period: months 1–' +
+            pdfDrawMonths +
+            (utilisationInput ? ' (' + utilisationInput + '% utilisation)' : '');
+          doc.text(drawLabel, legendX + swatchSize + swatchGap, legendY);
+
+          // Line 2: amber swatch + 100% utilisation label
+          legendY += lineGap;
+          doc.setFillColor(254, 243, 199); // light amber
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.1);
+          doc.rect(legendX, legendY - swatchSize + 1, swatchSize, swatchSize, 'FD');
+          var tailLabel = '100% utilisation period: months ' + (pdfDrawMonths + 1) + '+';
+          doc.text(tailLabel, legendX + swatchSize + swatchGap, legendY);
+
+          doc.setTextColor(0, 0, 0);
+          cursorY = legendY + lineGap;
+        }
+
+        var autoTableOptions = {
           head: [data.headers],
           body: data.rows,
           startY: cursorY,
@@ -781,9 +858,6 @@
             fillColor: [240, 240, 240],
             textColor: 0,
             fontStyle: 'bold'
-          },
-          alternateRowStyles: {
-            fillColor: [248, 248, 248]
           },
           columnStyles: {
             0: { halign: 'center', cellWidth: 18 },
@@ -830,7 +904,41 @@
             var textWidth = doc.getTextWidth(pageStr);
             doc.text(pageStr, pageWidth - marginRight - textWidth, footerY);
           }
-        });
+        };
+
+        if (useProgressiveColors) {
+          var bodyRowIndex = 0;
+          autoTableOptions.theme = 'plain';
+          autoTableOptions.bodyStyles = { fillColor: false };
+          autoTableOptions.didParseCell = function (data) {
+            if (data.section !== 'body') return;
+            if (data.column.index === 0) bodyRowIndex++;
+            var rowIndex = bodyRowIndex - 1;
+            var firstMonthOneBased = kind === 'monthly' ? rowIndex + 1 : rowIndex * 12 + 1;
+            var isDraw = firstMonthOneBased <= pdfDrawMonths;
+            data.cell.styles.fillColor = isDraw ? [224, 242, 254] : [254, 243, 199];
+          };
+          autoTableOptions.willDrawCell = function (data) {
+            if (data.section !== 'body') return;
+            var rowIndex = (function () {
+              var body = data.table && data.table.body;
+              if (!body) return 0;
+              for (var i = 0; i < body.length; i++) {
+                if (body[i] === data.row) return i;
+              }
+              return 0;
+            })();
+            var firstMonthOneBased = kind === 'monthly' ? rowIndex + 1 : rowIndex * 12 + 1;
+            var isDraw = firstMonthOneBased <= pdfDrawMonths;
+            var rgb = isDraw ? [224, 242, 254] : [254, 243, 199];
+            doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          };
+        } else {
+          autoTableOptions.alternateRowStyles = { fillColor: [248, 248, 248] };
+        }
+
+        doc.autoTable(autoTableOptions);
 
         var filename = 'capitalisation-breakdown-' + kind + '.pdf';
         doc.save(filename);

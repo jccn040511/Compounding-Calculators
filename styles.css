@@ -789,6 +789,40 @@ body {
   gap: var(--space-sm);
 }
 
+.breakdown-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.breakdown-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.breakdown-legend-swatch {
+  display: inline-block;
+  width: 1rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.breakdown-legend-draw {
+  background: #e0f2fe;
+  border: 1px solid #000;
+}
+
+.breakdown-legend-tail {
+  background: #fef3c7;
+  border: 1px solid #000;
+}
+
 .btn-export {
   padding: var(--space-sm) var(--space);
   font-size: 0.875rem;
@@ -923,6 +957,23 @@ body {
 
 .breakdown-table tbody tr:nth-child(even) td:first-child {
   background: var(--color-table-stripe);
+}
+
+/* Progressive draw phase color-coding (overrides stripe when present) */
+.breakdown-table tbody tr.phase-draw td {
+  background: #e0f2fe;
+}
+
+.breakdown-table tbody tr.phase-draw td:first-child {
+  background: #e0f2fe;
+}
+
+.breakdown-table tbody tr.phase-tail td {
+  background: #fef3c7;
+}
+
+.breakdown-table tbody tr.phase-tail td:first-child {
+  background: #fef3c7;
 }
 
 .breakdown-table td {
